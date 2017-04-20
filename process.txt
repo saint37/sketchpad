@@ -1,0 +1,1992 @@
+# ASSIGNMENT 3: Sketchpad (Kid's T-shirts) #
+For this assignment I wanted to develope a sketchpad for **Kid's T-shirts and Hoodies**. This sketchpad allows kids to easily create pleasing painting on their T-shirts. Compared to adults, kids' painting are relatively more simple and abstract, so the sketchpad we create need not to be complicated. And the layout should be clear for them to understand.
+First I draw a draft for my sketchpad. I decided to create a sketchpad like this:
+
+
+![snow](http://peepproject.com/media/images/portfolio/entries/15223/gallery/6.jpg)
+
+
+
+Ok, I shall divide my whole process into these steps:
+
+
+* Setup Layout
+* Add Brushes Type Changing function (button at top)
+* Add Brushes Color Changing function (color pie)
+* Add Background Color Changing function (button at bottom)
+* Add Mirror function (button at top)
+* Add Clear Screen function (button at top)
+
+
+Now let's start the process in processing.
+# Process #
+## Layout Setup ##
+We need to setup our sketch within a maximum width of 500 pixels, suppose our drawing area is 500 x 500 px, (the T-shirt is more like a square), and I set tools area to 100px height, and background select area at bottom to 50px height, then I created a 500 x 650 px sketch.
+
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+}
+
+void draw() {
+  
+}
+~~~
+
+Because I want to seperate the drawing layer and the background layer, so I created a foreground layer and a background layer. I use the **createGraphics()** function to create two new PGraphics objects, name it **foreground** and **background**. 
+~~~
+PGraphics foregroundLayer;
+PGraphics backgroundLayer;
+
+foregroundLayer = createGraphics(width, height); 
+backgroundLayer = createGraphics(width, height);
+~~~
+By doing this we create a transparent drawing layer. Then use **image(foreground, 0, 0)** to put our drawing layer on the background layer. 
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+  
+//we will draw on the foregroundLayer 
+PGraphics foregroundLayer;
+//the backgroundLayer is the canvas
+PGraphics backgroundLayer;
+
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+  
+  foregroundLayer = createGraphics(width, height); 
+  //we only need 500*500 for our background layer
+  backgroundLayer = createGraphics(width, height);
+  backgroundLayer.beginDraw();
+  backgroundLayer.fill(255,255,255);
+  backgroundLayer.rect(0,100,500,500);
+  backgroundLayer.endDraw();
+}
+
+void draw() {
+  //draw the sketch
+  foregroundLayer.beginDraw();
+  foregroundLayer.stroke(0);
+  foregroundLayer.line(mouseX,mouseY,pmouseX,pmouseY);
+  foregroundLayer.endDraw();
+  
+  image(backgroundLayer, 0, 0);
+  image(foregroundLayer, 0, 0);
+}
+~~~
+
+## Drawing Lines ##
+From the simplest begining, I began with drawing lines. We need to write everything we want to draw between **foreground.beginDraw()** and **foreground.endDraw()**. (Notice that If we want to draw a line we have to write foreground.line(). I made some mistake at first because I didn't doing this.) And I want to constrain the canvas size, (only draw in the drawing area), so I use **constrain()** function to constrain the mouse position.
+
+
+Normally, we use mouseX and mouseY and pmouseX and pmouseY as the position. Here I use mx, my, pmx, pmy to replace them. And set a targetX and targetY to add easing effect, when moving a target the pen can ease towards.
+~~~
+void mousePressed() {
+  targetX = mouseX;
+  targetY = mouseY;
+  mx = targetX;
+  my = targetY;
+  pmx = mx;
+  pmy = my;
+}
+ 
+void mouseDragged() {
+  targetX = mouseX;
+  targetY = mouseY;
+}
+~~~
+Using those variables, I draw like this:
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+  
+//because we want to constrain the canvas size
+//so use mx, my to save current position of mouse
+//and pmx, pmy the previous position of mouse
+float mx, my, pmx, pmy;
+//instead of drawing directly, add an easing effect
+float targetX, targetY;  
+//we will draw on the foregroundLayer 
+PGraphics foregroundLayer;
+//the backgroundLayer is the canvas
+PGraphics backgroundLayer;
+
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+  
+  foregroundLayer = createGraphics(width, height); 
+  //we only need 500*500 for our background layer
+  backgroundLayer = createGraphics(width, height);
+  backgroundLayer.beginDraw();
+  backgroundLayer.fill(255,255,255);
+  backgroundLayer.rect(0,100,500,500);
+  backgroundLayer.endDraw();
+}
+
+void draw() {
+  //constrain the sketchpad  
+  mx = constrain(mx, 0, 500);
+  my = constrain(my, 110, 590);
+  pmx = constrain(pmx, 0, 500);
+  pmy = constrain(pmy, 110, 590);
+  targetX = constrain(targetX, 0, 500);
+  targetY = constrain(targetY, 110, 590);
+  
+  //draw the sketch
+  foregroundLayer.beginDraw();
+  if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.stroke(0);
+      foregroundLayer.strokeWeight(dist(pmx, pmy, mx, my) * 0.2);
+      foregroundLayer.line(pmx, pmy, mx, my);
+    }
+  foregroundLayer.endDraw();
+  
+  image(backgroundLayer, 0, 0);
+  image(foregroundLayer, 0, 0);
+}
+
+void mousePressed() {
+  targetX = mouseX;
+  targetY = mouseY;
+  mx = targetX;
+  my = targetY;
+  pmx = mx;
+  pmy = my;
+}
+ 
+void mouseDragged() {
+  targetX = mouseX;
+  targetY = mouseY;
+}
+~~~
+
+## Add Another Brush (Create Button Class) ##
+We can't have only one tool for our sketchpad, so I need to add more. My original idea was to use keyboard to select tools, but I thought this would be difficult for kids to understand. So I decided to draw some buttons on the sketch.
+
+
+I created a **button class**, for each button in this class, it has **x-position**, **y-position**, **radius**(for square button, this is width/height), and a boolean value -- **clicked** (this is to judge whether the button is clicked, default is false). 
+~~~
+class Button {
+  float xpos, ypos, radius;
+  color cc;
+  boolean clicked;
+  Button (float x, float y, float r, color c) {
+    xpos = x;
+    ypos = y;
+    radius = r;
+    cc = c;
+    clicked = false;
+  }
+}
+~~~
+Other than the constructor function, I wrote two functions in the class, **drawbutton()** and **overbutton()**. The drawbutton() function is used to display button, if the button is **clicked**, it will be larger. The overbutton() function is used to judge whether our mouse has moved into the area of the button, by compare mouseX and mouseY's position and the edge of the button.
+~~~
+  //these two functions are in class Button
+  void drawrectbutton() {
+    fill(255);
+    noStroke();
+    if(clicked == false) {
+      rect(xpos, ypos, radius, radius);
+    }
+    else {
+      rect(xpos-5, ypos-5, radius+10, radius+10);
+    }
+  }
+  //check if the mouse is over the button, if true, return true
+  boolean overrectbutton() {
+    if(mouseX >= xpos && mouseX <= xpos+radius && 
+      mouseY >= ypos && mouseY <= ypos+radius) {
+      return true;
+    }
+    else {
+      return false; 
+    }
+  }
+~~~
+Then I setup buttons at the begining of the code. Call **drawbutton()** function at the begining. And also check which button the mouse is clicking at **mouseClicked()** function.
+~~~
+void mouseClicked() {
+    if(t0.overrectbutton() == true) { //line
+      tool = 'L';
+      t0.clicked = true;
+      t1.clicked = false;
+    }
+    else if(t1.overrectbutton() == true) { //brush
+      tool = 'B';
+      t0.clicked = false;
+      t1.clicked = true;
+    }
+}
+~~~
+The first button is to draw a line and the second is to draw a thicker line.
+
+
+(P.S: I don't know why it is a bit stuck on peep, I can run smoothly on my own computer...)
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+  
+//because we want to constrain the canvas size
+//so use mx, my to save current position of mouse
+//and pmx, pmy the previous position of mouse
+float mx, my, pmx, pmy;
+//instead of drawing directly, add an easing effect
+float targetX, targetY;  
+char tool = 'L';
+//we will draw on the foregroundLayer 
+PGraphics foregroundLayer;
+//the backgroundLayer is the canvas
+PGraphics backgroundLayer;
+
+//tools button
+Button t0 = new Button(20, 20, 25, color(255,255,255));
+Button t1 = new Button(60, 20, 25, color(255,255,255));
+
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+  
+  foregroundLayer = createGraphics(width, height); 
+  //we only need 500*500 for our background layer
+  backgroundLayer = createGraphics(width, height);
+  backgroundLayer.beginDraw();
+  backgroundLayer.fill(255,255,255);
+  backgroundLayer.rect(0,100,500,500);
+  backgroundLayer.endDraw();
+  
+  t0.clicked = true;  
+}
+
+void draw() {
+  //constrain the sketchpad  
+  mx = constrain(mx, 0, 500);
+  my = constrain(my, 110, 590);
+  pmx = constrain(pmx, 0, 500);
+  pmy = constrain(pmy, 110, 590);
+  targetX = constrain(targetX, 0, 500);
+  targetY = constrain(targetY, 110, 590);
+  
+  //clear previous button state
+  //we draw a rectangle on the screen everytime, else when 
+  //the button becomes bigger when clicked, when it becomes 
+  //smaller we cannot see the effect because the bigger one
+  //still remains on the screen.
+  fill(50);
+  noStroke();
+  rect(0,0,330,100);
+  rect(0,600,500,50);
+  
+  //add tools button
+  t0.drawrectbutton();
+  t1.drawrectbutton();
+  
+  //draw the sketch
+  foregroundLayer.beginDraw();
+  if (tool == 'L') {
+      if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.stroke(0);
+      foregroundLayer.strokeWeight(dist(pmx, pmy, mx, my) * 0.2);
+      foregroundLayer.line(pmx, pmy, mx, my);
+    }
+  }
+  else if (tool == 'B') {
+    if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.fill(0);
+      foregroundLayer.noStroke();
+      foregroundLayer.stroke(0);
+      foregroundLayer.strokeWeight(20);
+      foregroundLayer.line(pmx, pmy, mx, my);
+    }
+  }
+  foregroundLayer.endDraw();
+  
+  image(backgroundLayer, 0, 0);
+  image(foregroundLayer, 0, 0);
+}
+
+class Button {
+  float xpos, ypos, radius;
+  color cc;
+  boolean clicked;
+  Button (float x, float y, float r, color c) {
+    xpos = x;
+    ypos = y;
+    radius = r;
+    cc = c;
+    clicked = false;
+  }
+  //squire button, used for tools selector
+  void drawrectbutton() {
+    fill(255);
+    noStroke();
+    if(clicked == false) {
+      rect(xpos, ypos, radius, radius);
+    }
+    else {
+      rect(xpos-5, ypos-5, radius+10, radius+10);
+    }
+  }
+  //check if the mouse is over the button, if true, return true
+  boolean overrectbutton() {
+    if(mouseX >= xpos && mouseX <= xpos+radius && 
+      mouseY >= ypos && mouseY <= ypos+radius) {
+      return true;
+    }
+    else {
+      return false; 
+    }
+  }
+}
+
+void mousePressed() {
+  targetX = mouseX;
+  targetY = mouseY;
+  mx = targetX;
+  my = targetY;
+  pmx = mx;
+  pmy = my;
+}
+ 
+void mouseDragged() {
+  targetX = mouseX;
+  targetY = mouseY;
+}
+
+void mouseClicked() {
+    if(t0.overrectbutton() == true) { //line
+      tool = 'L';
+      t0.clicked = true;
+      t1.clicked = false;
+    }
+    else if(t1.overrectbutton() == true) { //brush
+      tool = 'B';
+      t0.clicked = false;
+      t1.clicked = true;
+    }
+}
+~~~
+
+
+And samely, I can add many tools for our sketchpad, by add more buttons. I decided to add **circle**, **triangle**, **square**, and **heart**. (I love heart pattern.) And for those brushes, I do not want them to be too "regular", I want them to be more "random", because for kids they draw everything as they please, just like scribble.
+
+
+So I use random() to random the shapes position and size slightly when drawing it.
+
+
+For circle brush:
+~~~
+float temp = random(1,30);
+float xoff = random(-20,20);
+float yoff = random(-20,20);
+foregroundLayer.ellipse(mx+xoff,my+yoff,temp,temp);
+~~~
+For triangle:
+~~~
+float x1off = random(-20,20);
+float y1off = random(-20,20);      
+float x2off = random(-20,20);
+float y2off = random(-20,20); 
+float x3off = random(-20,20);
+float y3off = random(-20,20);
+foregroundLayer.triangle(mx+x1off,my+y1off,mx+x2off,my+y2off,mx+x3off,my+y3off);
+~~~
+For square:
+~~~
+float xoff = random(-20,20);
+float yoff = random(-20,20);
+float w = random(5,20);
+float h = random(5,20);
+foregroundLayer.rect(mx+xoff,my+yoff,w,h);
+~~~
+For heart it is a little bit different, because I want to rotate the heart shape so I have to translate to the shape's position and then rotate.
+~~~
+float tempx = mx + random(-20,20);
+float tempy = my + random(-20,20);
+float a = random(PI);
+float s = random(0.3,0.7); //scale of the heart shape
+foregroundLayer.pushMatrix();
+foregroundLayer.translate(tempx,tempy);
+foregroundLayer.rotate(a);
+foregroundLayer.scale(s);
+foregroundLayer.noStroke();
+foregroundLayer.beginShape();
+foregroundLayer.vertex(0, 0);
+foregroundLayer.bezierVertex(40, -20, 20, 20, 0, 40);
+foregroundLayer.vertex(0, 0);
+foregroundLayer.bezierVertex(-40, -20, -20, 20, 0, 40);
+foregroundLayer.endShape();
+foregroundLayer.popMatrix();
+~~~
+Also, when drawing I set the color slightly random.
+~~~
+foregroundLayer.fill(0, random(100,255));
+~~~
+Then I add those brushes button. Check which tool to use in **mouseClicked()** function, (the default is Line), then draw different patterns in **draw()** function. It is not complicated but need to be patient... Let's write off it!
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+  
+//because we want to constrain the canvas size
+//so use mx, my to save current position of mouse
+//and pmx, pmy the previous position of mouse
+float mx, my, pmx, pmy;
+//instead of drawing directly, add an easing effect
+float targetX, targetY;  
+char tool = 'L';
+//we will draw on the foregroundLayer 
+PGraphics foregroundLayer;
+//the backgroundLayer is the canvas
+PGraphics backgroundLayer;
+
+//tools button
+Button t0 = new Button(20, 20, 25, color(255,255,255));
+Button t1 = new Button(60, 20, 25, color(255,255,255));
+Button t2 = new Button(100, 20, 25, color(255,255,255));
+Button t3 = new Button(140, 20, 25, color(255,255,255));
+Button t4 = new Button(180, 20, 25, color(255,255,255));
+Button t5 = new Button(220, 20, 25, color(255,255,255));
+
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+  
+  foregroundLayer = createGraphics(width, height); 
+  //we only need 500*500 for our background layer
+  backgroundLayer = createGraphics(width, height);
+  backgroundLayer.beginDraw();
+  backgroundLayer.fill(255,255,255);
+  backgroundLayer.rect(0,100,500,500);
+  backgroundLayer.endDraw();
+  
+  t0.clicked = true;  
+}
+
+void draw() {
+  //constrain the sketchpad  
+  mx = constrain(mx, 0, 500);
+  my = constrain(my, 110, 590);
+  pmx = constrain(pmx, 0, 500);
+  pmy = constrain(pmy, 110, 590);
+  targetX = constrain(targetX, 0, 500);
+  targetY = constrain(targetY, 110, 590);
+  
+  //clear previous button state
+  //we draw a rectangle on the screen everytime, else when 
+  //the button becomes bigger when clicked, when it becomes 
+  //smaller we cannot see the effect because the bigger one
+  //still remains on the screen.
+  fill(50);
+  noStroke();
+  rect(0,0,330,100);
+  rect(0,600,500,50);
+  
+  //add tools button
+  t0.drawrectbutton();
+  t1.drawrectbutton();
+  t2.drawrectbutton();
+  t3.drawrectbutton();
+  t4.drawrectbutton();
+  t5.drawrectbutton();
+  
+  //draw the sketch
+  //draw the sketch
+  foregroundLayer.beginDraw();
+  if (tool == 'L') {
+      if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.stroke(0);
+      foregroundLayer.strokeWeight(dist(pmx, pmy, mx, my) * 0.2);
+      foregroundLayer.line(pmx, pmy, mx, my);
+    }
+  }
+  else if (tool == 'B') {
+    if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.fill(0);
+      foregroundLayer.noStroke();
+      foregroundLayer.stroke(0);
+      foregroundLayer.strokeWeight(20);
+      foregroundLayer.line(pmx, pmy, mx, my);
+    }
+  }
+  else if (tool == 'C') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(0, random(100,255));
+      foregroundLayer.noStroke();
+      float temp = random(1,30);
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      foregroundLayer.ellipse(mx+xoff,my+yoff,temp,temp);
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'T') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(0, random(100,255));
+      foregroundLayer.noStroke();
+      float x1off = random(-20,20);
+      float y1off = random(-20,20);      
+      float x2off = random(-20,20);
+      float y2off = random(-20,20); 
+      float x3off = random(-20,20);
+      float y3off = random(-20,20);
+      foregroundLayer.triangle(mx+x1off,my+y1off,mx+x2off,my+y2off,mx+x3off,my+y3off);
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'R') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(0, random(100,255));
+      foregroundLayer.noStroke();
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      float w = random(5,20);
+      float h = random(5,20);
+      foregroundLayer.rect(mx+xoff,my+yoff,w,h);
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'H') {
+    if (mx != targetX || my != targetY) {
+      float tempx = mx + random(-20,20);
+      float tempy = my + random(-20,20);
+      float a = random(PI);
+      float s = random(0.3,0.7);
+      float t = random(100,255);
+      foregroundLayer.pushMatrix();
+      foregroundLayer.translate(tempx,tempy);
+      foregroundLayer.rotate(a);
+      foregroundLayer.scale(s);
+      foregroundLayer.fill(0, t);
+      foregroundLayer.noStroke();
+      foregroundLayer.beginShape();
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(40, -20, 20, 20, 0, 40);
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(-40, -20, -20, 20, 0, 40);
+      foregroundLayer.endShape();
+      foregroundLayer.popMatrix();
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  foregroundLayer.endDraw();
+  
+  image(backgroundLayer, 0, 0);
+  image(foregroundLayer, 0, 0);
+}
+
+class Button {
+  float xpos, ypos, radius;
+  color cc;
+  boolean clicked;
+  Button (float x, float y, float r, color c) {
+    xpos = x;
+    ypos = y;
+    radius = r;
+    cc = c;
+    clicked = false;
+  }
+  //squire button, used for tools selector
+  void drawrectbutton() {
+    fill(255);
+    noStroke();
+    if(clicked == false) {
+      rect(xpos, ypos, radius, radius);
+    }
+    else {
+      rect(xpos-5, ypos-5, radius+10, radius+10);
+    }
+  }
+  //check if the mouse is over the button, if true, return true
+  boolean overrectbutton() {
+    if(mouseX >= xpos && mouseX <= xpos+radius && 
+      mouseY >= ypos && mouseY <= ypos+radius) {
+      return true;
+    }
+    else {
+      return false; 
+    }
+  }
+}
+
+void mousePressed() {
+  targetX = mouseX;
+  targetY = mouseY;
+  mx = targetX;
+  my = targetY;
+  pmx = mx;
+  pmy = my;
+}
+ 
+void mouseDragged() {
+  targetX = mouseX;
+  targetY = mouseY;
+}
+
+void mouseClicked() {
+    if(t0.overrectbutton() == true) { //line
+      tool = 'L';
+      t0.clicked = true;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t1.overrectbutton() == true) { //brush
+      tool = 'B';
+      t0.clicked = false;
+      t1.clicked = true;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t2.overrectbutton() == true) { //circle
+      tool = 'C';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = true;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t3.overrectbutton() == true) { //triangle
+      tool = 'T';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = true;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t4.overrectbutton() == true) { //rect
+      tool = 'R';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = true;
+      t5.clicked = false;
+    }
+    else if(t5.overrectbutton() == true) { //heart
+      tool = 'H';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = true;
+    }
+}
+~~~
+Ok Ok Ok... Now we finished all the drawing pattern! I need to have a rest...
+
+
+## Change colors ##
+All right I'm back.
+
+
+Until now the sketch we have drawn is all black, kids don't like black :(, so now I will add a color selector so that we can create colorful sketch :D. First, create mycolor using **color mycolor** at the begining.
+
+
+I use colorMode HSB, and I draw a pie at the corner. Just want to thank my roommate who helped me figure out the transition function from polar coordinates to Cartesian coordinates. I am not very good at math.
+
+
+The radius of the color pie is 45px.
+~~~
+/** @peep sketchcode */
+void setup() {
+  colorMode(HSB);
+  size(100,100);
+}
+void draw() {
+  colorselector(50,50);
+}
+void colorselector(int x, int y) {
+  pushMatrix();
+  translate(x,y);
+  for(float hh = 0; hh < 360; hh++) {
+    for(float i = 0; i < 255; i++) {
+      //when the radius is from 26 to 45 (150/255*45 == 26), we change Brightness
+      //so the color dip into black
+      float bb = map(i, 150, 255, 255, 50); 
+      // when the radius is from 0 to 26, we change Saturation
+      //so the pie center start from white
+      float ss = map(i, 0, 150, 0, 255);
+      color cc = color(hh, ss, bb);
+      stroke(cc);
+      point((45.0/255)*i*sin(0.017453*hh),(45.0/255)*i*cos(0.017453*hh));
+    }
+  }
+  popMatrix();
+}
+~~~
+Then I realize I can't select grey. So I add a rectangle to add a gradual change from white to black.
+~~~
+  translate(x,y); //(x, y) is (385, 50) in our case
+  for(int i = 0; i < 90; i++) {
+    float bright = map(i, 0, 90, 255, 0);
+    color b = color(bright);
+    stroke(b);
+    line(60,-45+i,80,-45+i);
+  }
+~~~
+I use **get()** to get the current color where I put my mouse. First check if mouse is in the area of our color pie and color rectangle. If yes, we get the color and set it to **mycolor**.
+~~~
+  if(mousePressed) {
+    if( (sqrt(sq(disX) + sq(disY)) < 45) || 
+    (mouseX > 440 && mouseX < 460 && mouseY > 5 && mouseY < 90)) {
+      mycolor = get(mouseX, mouseY);    
+    }    
+  }
+~~~
+Now we need to replace those black color by **mycolor**. And we can draw colorful paintings now.
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+  
+//because we want to constrain the canvas size
+//so use mx, my to save current position of mouse
+//and pmx, pmy the previous position of mouse
+float mx, my, pmx, pmy;
+//instead of drawing directly, add an easing effect
+float targetX, targetY;  
+char tool = 'L';
+//we will draw on the foregroundLayer 
+PGraphics foregroundLayer;
+//the backgroundLayer is the canvas
+PGraphics backgroundLayer;
+//mycolor is the current color we are drawing
+color mycolor;
+
+//tools button
+Button t0 = new Button(20, 20, 25, color(255,255,255));
+Button t1 = new Button(60, 20, 25, color(255,255,255));
+Button t2 = new Button(100, 20, 25, color(255,255,255));
+Button t3 = new Button(140, 20, 25, color(255,255,255));
+Button t4 = new Button(180, 20, 25, color(255,255,255));
+Button t5 = new Button(220, 20, 25, color(255,255,255));
+
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+  
+  foregroundLayer = createGraphics(width, height); 
+  //we only need 500*500 for our background layer
+  backgroundLayer = createGraphics(width, height);
+  backgroundLayer.beginDraw();
+  backgroundLayer.fill(255,255,255);
+  backgroundLayer.rect(0,100,500,500);
+  backgroundLayer.endDraw();
+  
+  //default is Line
+  t0.clicked = true;  
+  
+  colorselector(380,50);
+  mycolor = color(0,0,0);
+}
+
+void draw() {
+  //constrain the sketchpad  
+  mx = constrain(mx, 0, 500);
+  my = constrain(my, 110, 590);
+  pmx = constrain(pmx, 0, 500);
+  pmy = constrain(pmy, 110, 590);
+  targetX = constrain(targetX, 0, 500);
+  targetY = constrain(targetY, 110, 590);
+  
+  //clear previous button state
+  //we draw a rectangle on the screen everytime, else when 
+  //the button becomes bigger when clicked, when it becomes 
+  //smaller we cannot see the effect because the bigger one
+  //still remains on the screen.
+  fill(50);
+  noStroke();
+  rect(0,0,330,100);
+  rect(0,600,500,50);
+  
+  //add tools button
+  t0.drawrectbutton();
+  t1.drawrectbutton();
+  t2.drawrectbutton();
+  t3.drawrectbutton();
+  t4.drawrectbutton();
+  t5.drawrectbutton();
+  
+  //select a drawing color, default is black
+  selectcolor();
+  
+  //draw the sketch
+  foregroundLayer.beginDraw();
+  if (tool == 'L') {
+      if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.stroke(mycolor);
+      foregroundLayer.strokeWeight(dist(pmx, pmy, mx, my) * 0.2);
+      foregroundLayer.line(pmx, pmy, mx, my);
+    }
+  }
+  else if (tool == 'B') {
+    if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.fill(0);
+      foregroundLayer.noStroke();
+      foregroundLayer.stroke(mycolor);
+      foregroundLayer.strokeWeight(20);
+      foregroundLayer.line(pmx, pmy, mx, my);
+    }
+  }
+  else if (tool == 'C') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float temp = random(1,30);
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      foregroundLayer.ellipse(mx+xoff,my+yoff,temp,temp);
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'T') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float x1off = random(-20,20);
+      float y1off = random(-20,20);      
+      float x2off = random(-20,20);
+      float y2off = random(-20,20); 
+      float x3off = random(-20,20);
+      float y3off = random(-20,20);
+      foregroundLayer.triangle(mx+x1off,my+y1off,mx+x2off,my+y2off,mx+x3off,my+y3off);
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'R') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      float w = random(5,20);
+      float h = random(5,20);
+      foregroundLayer.rect(mx+xoff,my+yoff,w,h);
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'H') {
+    if (mx != targetX || my != targetY) {
+      float tempx = mx + random(-20,20);
+      float tempy = my + random(-20,20);
+      float a = random(PI);
+      float s = random(0.3,0.7);
+      float t = random(100,255);
+      foregroundLayer.pushMatrix();
+      foregroundLayer.translate(tempx,tempy);
+      foregroundLayer.rotate(a);
+      foregroundLayer.scale(s);
+      foregroundLayer.fill(mycolor, t);
+      foregroundLayer.noStroke();
+      foregroundLayer.beginShape();
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(40, -20, 20, 20, 0, 40);
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(-40, -20, -20, 20, 0, 40);
+      foregroundLayer.endShape();
+      foregroundLayer.popMatrix();
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  foregroundLayer.endDraw();
+  
+  image(backgroundLayer, 0, 0);
+  image(foregroundLayer, 0, 0);
+}
+
+void colorselector(int x, int y) {
+  pushMatrix();
+  translate(x,y);
+  for(int i = 0; i < 90; i++) {
+    float bright = map(i, 0, 90, 255, 0);
+    color b = color(bright);
+    stroke(b);
+    line(60,-45+i,80,-45+i);
+  }
+  for(float hh = 0; hh < 360; hh++) {
+    for(float i = 0; i < 255; i++) {
+      //when the radius is from 26 to 45 (150/255*45 == 26), we change Brightness
+      //so the color dip into black
+      float bb = map(i, 150, 255, 255, 50);
+      // when the radius is from 0 to 26, we change Saturation
+      //so the pie center start from white
+      float ss = map(i, 0, 150, 0, 255);
+      color cc = color(hh, ss, bb);
+      stroke(cc);
+      point((45.0/255)*i*sin(0.017453*hh),(45.0/255)*i*cos(0.017453*hh));
+    }
+  }
+  popMatrix();
+}
+
+void selectcolor() {
+  float disX = 380 - mouseX;
+  float disY = 50 - mouseY;
+  if(mousePressed) {
+    if( (sqrt(sq(disX) + sq(disY)) < 45) || 
+    (mouseX > 440 && mouseX < 460 && mouseY > 5 && mouseY < 90)) {
+      mycolor = get(mouseX, mouseY);    
+    }    
+  }
+  noStroke();
+  fill(mycolor);
+  rect(470,75,20,20);
+}
+
+class Button {
+  float xpos, ypos, radius;
+  color cc;
+  boolean clicked;
+  Button (float x, float y, float r, color c) {
+    xpos = x;
+    ypos = y;
+    radius = r;
+    cc = c;
+    clicked = false;
+  }
+  //squire button, used for tools selector
+  void drawrectbutton() {
+    fill(255);
+    noStroke();
+    if(clicked == false) {
+      rect(xpos, ypos, radius, radius);
+    }
+    else {
+      rect(xpos-5, ypos-5, radius+10, radius+10);
+    }
+  }
+  //check if the mouse is over the button, if true, return true
+  boolean overrectbutton() {
+    if(mouseX >= xpos && mouseX <= xpos+radius && 
+      mouseY >= ypos && mouseY <= ypos+radius) {
+      return true;
+    }
+    else {
+      return false; 
+    }
+  }
+}
+
+void mousePressed() {
+  targetX = mouseX;
+  targetY = mouseY;
+  mx = targetX;
+  my = targetY;
+  pmx = mx;
+  pmy = my;
+}
+ 
+void mouseDragged() {
+  targetX = mouseX;
+  targetY = mouseY;
+}
+
+void mouseClicked() {
+    if(t0.overrectbutton() == true) { //line
+      tool = 'L';
+      t0.clicked = true;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t1.overrectbutton() == true) { //brush
+      tool = 'B';
+      t0.clicked = false;
+      t1.clicked = true;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t2.overrectbutton() == true) { //circle
+      tool = 'C';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = true;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t3.overrectbutton() == true) { //triangle
+      tool = 'T';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = true;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t4.overrectbutton() == true) { //rect
+      tool = 'R';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = true;
+      t5.clicked = false;
+    }
+    else if(t5.overrectbutton() == true) { //heart
+      tool = 'H';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = true;
+    }
+}
+~~~
+
+
+## Add Mirror effect ##
+In *Assignment3: Getting Started*, we can draw mirror image, that is pretty cool. Let's look at the code:
+~~~
+/** @peep sketchcode */
+float targetX, targetY;
+float penX, penY, ppenX, ppenY;
+ 
+void setup() {
+  size(500, 500);
+  reset();
+}
+ 
+void reset() {
+  pushStyle();
+  stroke(0, 64);
+  rect(0, 0, width, height);
+  popStyle();
+}
+ 
+void draw() {
+  // If the pen has not reached the target...
+  if (penX != targetX || penY != targetY) {
+    // Record the previous position of the pen
+    ppenX = penX;
+    ppenY = penY;
+    // Ease the current position of the pen towards the target
+    penX = penX + 0.05 * (targetX - penX);
+    penY = penY + 0.05 * (targetY - penY);
+    // Calculate a stroke weight based on the speed of movement
+    strokeWeight(dist(ppenX, ppenY, penX, penY) * 0.5);
+    // Draw a line from the previous to the current pen position
+    line(ppenX, ppenY, penX, penY);
+    // Draw a second line flipped in the horizontal axis
+    line(width-ppenX, ppenY, width-penX, penY);
+  }
+}
+ 
+void mousePressed() {
+  // If the mouse is pressed, reset the pen and target to the mouse position
+  targetX = mouseX;
+  targetY = mouseY;
+  penX = targetX;
+  penY = targetY;
+  ppenX = penX;
+  ppenY = penY;
+}
+ 
+void mouseDragged() {
+  // If the mouse is dragged update the target, for the pen to follow
+  targetX = mouseX;
+  targetY = mouseY;
+}
+~~~
+
+All right, it is using **line(width-ppenX, ppenY, width-penX, penY);** to draw a mirrored line.
+
+
+So I imitate this to add a mirror button in my sketch, if it is clicked, it will draw mirror like image, (draw (width - mx,my) and (mx,my)), else it will draw normally.
+
+
+Click the mirror button will activate mirror effect, click it again will remove the effect.
+~~~
+if(mirror.overrectbutton() == true) {
+      if(mirror.clicked == false) {
+        mirror.clicked = true;
+      }
+      else {
+        mirror.clicked = false;
+      }
+}
+~~~
+We add this mirror button to our sketchpad.
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+  
+//because we want to constrain the canvas size
+//so use mx, my to save current position of mouse
+//and pmx, pmy the previous position of mouse
+float mx, my, pmx, pmy;
+//instead of drawing directly, add an easing effect
+float targetX, targetY;  
+char tool = 'L';
+//we will draw on the foregroundLayer 
+PGraphics foregroundLayer;
+//the backgroundLayer is the canvas
+PGraphics backgroundLayer;
+//mycolor is the current color we are drawing
+color mycolor;
+
+//tools button
+Button t0 = new Button(20, 20, 25, color(255,255,255));
+Button t1 = new Button(60, 20, 25, color(255,255,255));
+Button t2 = new Button(100, 20, 25, color(255,255,255));
+Button t3 = new Button(140, 20, 25, color(255,255,255));
+Button t4 = new Button(180, 20, 25, color(255,255,255));
+Button t5 = new Button(220, 20, 25, color(255,255,255));
+
+Button mirror = new Button(260, 60, 25, color(255,255,255));
+
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+  
+  foregroundLayer = createGraphics(width, height); 
+  //we only need 500*500 for our background layer
+  backgroundLayer = createGraphics(width, height);
+  backgroundLayer.beginDraw();
+  backgroundLayer.fill(255,255,255);
+  backgroundLayer.rect(0,100,500,500);
+  backgroundLayer.endDraw();
+  
+  //default is Line
+  t0.clicked = true;  
+  
+  colorselector(380,50);
+  mycolor = color(0,0,0);
+}
+
+void draw() {
+  //constrain the sketchpad  
+  mx = constrain(mx, 0, 500);
+  my = constrain(my, 110, 590);
+  pmx = constrain(pmx, 0, 500);
+  pmy = constrain(pmy, 110, 590);
+  targetX = constrain(targetX, 0, 500);
+  targetY = constrain(targetY, 110, 590);
+  
+  //clear previous button state
+  //we draw a rectangle on the screen everytime, else when 
+  //the button becomes bigger when clicked, when it becomes 
+  //smaller we cannot see the effect because the bigger one
+  //still remains on the screen.
+  fill(50);
+  noStroke();
+  rect(0,0,330,100);
+  rect(0,600,500,50);
+  
+  //add tools button
+  t0.drawrectbutton();
+  t1.drawrectbutton();
+  t2.drawrectbutton();
+  t3.drawrectbutton();
+  t4.drawrectbutton();
+  t5.drawrectbutton();
+  
+  mirror.drawrectbutton();
+  
+  //select a drawing color, default is black
+  selectcolor();
+  
+  //draw the sketch
+  foregroundLayer.beginDraw();
+  if (tool == 'L') {
+      if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.stroke(mycolor);
+      foregroundLayer.strokeWeight(dist(pmx, pmy, mx, my) * 0.2);
+      foregroundLayer.line(pmx, pmy, mx, my);
+      if(mirror.clicked == true) {
+        //Draw a second line flipped in the horizontal axis
+        foregroundLayer.line(width-pmx, pmy, width-mx, my);        
+      }
+    }
+  }
+  else if (tool == 'B') {
+    if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.fill(mycolor);
+      foregroundLayer.noStroke();
+      foregroundLayer.stroke(mycolor);
+      foregroundLayer.strokeWeight(20);
+      foregroundLayer.line(pmx, pmy, mx, my);
+      if(mirror.clicked == true) {
+        foregroundLayer.line(width-pmx, pmy, width-mx, my);        
+      }
+    }
+  }
+  else if (tool == 'C') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float temp = random(1,30);
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      foregroundLayer.ellipse(mx+xoff,my+yoff,temp,temp);
+      if(mirror.clicked == true) {
+        foregroundLayer.ellipse(width-mx-xoff,my+yoff,temp,temp);
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'T') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float x1off = random(-20,20);
+      float y1off = random(-20,20);      
+      float x2off = random(-20,20);
+      float y2off = random(-20,20); 
+      float x3off = random(-20,20);
+      float y3off = random(-20,20);
+      foregroundLayer.triangle(mx+x1off,my+y1off,mx+x2off,my+y2off,mx+x3off,my+y3off);
+      if(mirror.clicked == true) {
+        foregroundLayer.triangle(width-mx-x1off,my+y1off,width-mx-x2off,my+y2off,width-mx-x3off,my+y3off);
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'R') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      float w = random(5,20);
+      float h = random(5,20);
+      foregroundLayer.rect(mx+xoff,my+yoff,w,h);
+      if(mirror.clicked == true) {
+        foregroundLayer.rect(width-mx-xoff-w,my+yoff,w,h);
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'H') {
+    if (mx != targetX || my != targetY) {
+      float tempx = mx + random(-20,20);
+      float tempy = my + random(-20,20);
+      float a = random(PI);
+      float s = random(0.3,0.7);
+      float t = random(100,255);
+      foregroundLayer.pushMatrix();
+      foregroundLayer.translate(tempx,tempy);
+      foregroundLayer.rotate(a);
+      foregroundLayer.scale(s);
+      foregroundLayer.fill(mycolor, t);
+      foregroundLayer.noStroke();
+      foregroundLayer.beginShape();
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(40, -20, 20, 20, 0, 40);
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(-40, -20, -20, 20, 0, 40);
+      foregroundLayer.endShape();
+      foregroundLayer.popMatrix();
+      
+      if(mirror.clicked == true) {
+        foregroundLayer.pushMatrix();
+        foregroundLayer.translate(width-tempx,tempy);
+        foregroundLayer.rotate(a);
+        foregroundLayer.scale(s);
+        foregroundLayer.fill(mycolor, t);
+        foregroundLayer.noStroke();
+        foregroundLayer.beginShape();
+        foregroundLayer.vertex(0, 0);
+        foregroundLayer.bezierVertex(40, -20, 20, 20, 0, 40);
+        foregroundLayer.vertex(0, 0);
+        foregroundLayer.bezierVertex(-40, -20, -20, 20, 0, 40);
+        foregroundLayer.endShape();
+        foregroundLayer.popMatrix();
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  foregroundLayer.endDraw();
+  
+  image(backgroundLayer, 0, 0);
+  image(foregroundLayer, 0, 0);
+}
+
+void colorselector(int x, int y) {
+  pushMatrix();
+  translate(x,y);
+  for(int i = 0; i < 90; i++) {
+    float bright = map(i, 0, 90, 255, 0);
+    color b = color(bright);
+    stroke(b);
+    line(60,-45+i,80,-45+i);
+  }
+  for(float hh = 0; hh < 360; hh++) {
+    for(float i = 0; i < 255; i++) {
+      //when the radius is from 26 to 45 (150/255*45 == 26), we change Brightness
+      //so the color dip into black
+      float bb = map(i, 150, 255, 255, 50);
+      // when the radius is from 0 to 26, we change Saturation
+      //so the pie center start from white
+      float ss = map(i, 0, 150, 0, 255);
+      color cc = color(hh, ss, bb);
+      stroke(cc);
+      point((45.0/255)*i*sin(0.017453*hh),(45.0/255)*i*cos(0.017453*hh));
+    }
+  }
+  popMatrix();
+}
+
+void selectcolor() {
+  float disX = 380 - mouseX;
+  float disY = 50 - mouseY;
+  if(mousePressed) {
+    if( (sqrt(sq(disX) + sq(disY)) < 45) || 
+    (mouseX > 440 && mouseX < 460 && mouseY > 5 && mouseY < 90)) {
+      mycolor = get(mouseX, mouseY);    
+    }    
+  }
+  noStroke();
+  fill(mycolor);
+  rect(470,75,20,20);
+}
+
+class Button {
+  float xpos, ypos, radius;
+  color cc;
+  boolean clicked;
+  Button (float x, float y, float r, color c) {
+    xpos = x;
+    ypos = y;
+    radius = r;
+    cc = c;
+    clicked = false;
+  }
+  //squire button, used for tools selector
+  void drawrectbutton() {
+    fill(255);
+    noStroke();
+    if(clicked == false) {
+      rect(xpos, ypos, radius, radius);
+    }
+    else {
+      rect(xpos-5, ypos-5, radius+10, radius+10);
+    }
+  }
+  //check if the mouse is over the button, if true, return true
+  boolean overrectbutton() {
+    if(mouseX >= xpos && mouseX <= xpos+radius && 
+      mouseY >= ypos && mouseY <= ypos+radius) {
+      return true;
+    }
+    else {
+      return false; 
+    }
+  }
+}
+
+void mousePressed() {
+  targetX = mouseX;
+  targetY = mouseY;
+  mx = targetX;
+  my = targetY;
+  pmx = mx;
+  pmy = my;
+}
+ 
+void mouseDragged() {
+  targetX = mouseX;
+  targetY = mouseY;
+}
+
+void mouseClicked() {
+    if(t0.overrectbutton() == true) { //line
+      tool = 'L';
+      t0.clicked = true;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t1.overrectbutton() == true) { //brush
+      tool = 'B';
+      t0.clicked = false;
+      t1.clicked = true;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t2.overrectbutton() == true) { //circle
+      tool = 'C';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = true;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t3.overrectbutton() == true) { //triangle
+      tool = 'T';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = true;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t4.overrectbutton() == true) { //rect
+      tool = 'R';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = true;
+      t5.clicked = false;
+    }
+    else if(t5.overrectbutton() == true) { //heart
+      tool = 'H';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = true;
+    }
+    else if(mirror.overrectbutton() == true) {
+      if(mirror.clicked == false) {
+        mirror.clicked = true;
+      }
+      else {
+        mirror.clicked = false;
+      }
+    }
+}
+~~~
+
+
+## Add Clear Function ##
+I was about to create a eraser. But somehow I found it rather complicated. Take into consideration that this is just a kids sketchpad I decided to make it simple. Just add a clear button, when click it, it can delete all the drawing we have on foreground.
+
+
+This is easy to realize.
+~~~
+if(clear.overrectbutton() == true) {
+      foregroundLayer.clear();
+}
+~~~
+and our sketchpad become like this.
+~~~
+/** @peep sketchcode */
+/*This sketchpad is designed for kids T-shirts and Hoodies
+  click the button at bottom to change background color
+  click the button at top to selector a tool*/
+  
+//because we want to constrain the canvas size
+//so use mx, my to save current position of mouse
+//and pmx, pmy the previous position of mouse
+float mx, my, pmx, pmy;
+//instead of drawing directly, add an easing effect
+float targetX, targetY;  
+char tool = 'L';
+//we will draw on the foregroundLayer 
+PGraphics foregroundLayer;
+//the backgroundLayer is the canvas
+PGraphics backgroundLayer;
+//mycolor is the current color we are drawing
+color mycolor;
+
+//tools button
+Button t0 = new Button(20, 20, 25, color(255,255,255));
+Button t1 = new Button(60, 20, 25, color(255,255,255));
+Button t2 = new Button(100, 20, 25, color(255,255,255));
+Button t3 = new Button(140, 20, 25, color(255,255,255));
+Button t4 = new Button(180, 20, 25, color(255,255,255));
+Button t5 = new Button(220, 20, 25, color(255,255,255));
+
+Button mirror = new Button(260, 60, 25, color(255,255,255));
+Button clear = new Button(300, 60, 25, color(255,255,255));
+
+void setup() {
+  //divide the sketch into different parts
+  colorMode(HSB);
+  size(500, 650);
+  background(255);
+  fill(50);
+  noStroke();
+  rect(0,0,500,100);
+  rect(0,600,500,50);
+  smooth();
+  
+  foregroundLayer = createGraphics(width, height); 
+  //we only need 500*500 for our background layer
+  backgroundLayer = createGraphics(width, height);
+  backgroundLayer.beginDraw();
+  backgroundLayer.fill(255,255,255);
+  backgroundLayer.rect(0,100,500,500);
+  backgroundLayer.endDraw();
+  
+  //default is Line
+  t0.clicked = true;  
+  
+  colorselector(380,50);
+  mycolor = color(0,0,0);
+}
+
+void draw() {
+  //constrain the sketchpad  
+  mx = constrain(mx, 0, 500);
+  my = constrain(my, 110, 590);
+  pmx = constrain(pmx, 0, 500);
+  pmy = constrain(pmy, 110, 590);
+  targetX = constrain(targetX, 0, 500);
+  targetY = constrain(targetY, 110, 590);
+  
+  //clear previous button state
+  //we draw a rectangle on the screen everytime, else when 
+  //the button becomes bigger when clicked, when it becomes 
+  //smaller we cannot see the effect because the bigger one
+  //still remains on the screen.
+  fill(50);
+  noStroke();
+  rect(0,0,330,100);
+  rect(0,600,500,50);
+  
+  //add tools button
+  t0.drawrectbutton();
+  t1.drawrectbutton();
+  t2.drawrectbutton();
+  t3.drawrectbutton();
+  t4.drawrectbutton();
+  t5.drawrectbutton();
+  
+  mirror.drawrectbutton();
+  clear.drawrectbutton();
+  
+  //select a drawing color, default is black
+  selectcolor();
+  
+  //draw the sketch
+  foregroundLayer.beginDraw();
+  if (tool == 'L') {
+      if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.stroke(mycolor);
+      foregroundLayer.strokeWeight(dist(pmx, pmy, mx, my) * 0.2);
+      foregroundLayer.line(pmx, pmy, mx, my);
+      if(mirror.clicked == true) {
+        //Draw a second line flipped in the horizontal axis
+        foregroundLayer.line(width-pmx, pmy, width-mx, my);        
+      }
+    }
+  }
+  else if (tool == 'B') {
+    if (mx != targetX || my != targetY) {
+      pmx = mx;
+      pmy = my;
+      mx = mx + 0.1 * (targetX - mx);
+      my = my + 0.1 * (targetY - my);
+      foregroundLayer.fill(mycolor);
+      foregroundLayer.noStroke();
+      foregroundLayer.stroke(mycolor);
+      foregroundLayer.strokeWeight(20);
+      foregroundLayer.line(pmx, pmy, mx, my);
+      if(mirror.clicked == true) {
+        foregroundLayer.line(width-pmx, pmy, width-mx, my);        
+      }
+    }
+  }
+  else if (tool == 'C') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float temp = random(1,30);
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      foregroundLayer.ellipse(mx+xoff,my+yoff,temp,temp);
+      if(mirror.clicked == true) {
+        foregroundLayer.ellipse(width-mx-xoff,my+yoff,temp,temp);
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'T') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float x1off = random(-20,20);
+      float y1off = random(-20,20);      
+      float x2off = random(-20,20);
+      float y2off = random(-20,20); 
+      float x3off = random(-20,20);
+      float y3off = random(-20,20);
+      foregroundLayer.triangle(mx+x1off,my+y1off,mx+x2off,my+y2off,mx+x3off,my+y3off);
+      if(mirror.clicked == true) {
+        foregroundLayer.triangle(width-mx-x1off,my+y1off,width-mx-x2off,my+y2off,width-mx-x3off,my+y3off);
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'R') {
+    if (mx != targetX || my != targetY) {
+      foregroundLayer.fill(mycolor, random(100,255));
+      foregroundLayer.noStroke();
+      float xoff = random(-20,20);
+      float yoff = random(-20,20);
+      float w = random(5,20);
+      float h = random(5,20);
+      foregroundLayer.rect(mx+xoff,my+yoff,w,h);
+      if(mirror.clicked == true) {
+        foregroundLayer.rect(width-mx-xoff-w,my+yoff,w,h);
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  else if (tool == 'H') {
+    if (mx != targetX || my != targetY) {
+      float tempx = mx + random(-20,20);
+      float tempy = my + random(-20,20);
+      float a = random(PI);
+      float s = random(0.3,0.7);
+      float t = random(100,255);
+      foregroundLayer.pushMatrix();
+      foregroundLayer.translate(tempx,tempy);
+      foregroundLayer.rotate(a);
+      foregroundLayer.scale(s);
+      foregroundLayer.fill(mycolor, t);
+      foregroundLayer.noStroke();
+      foregroundLayer.beginShape();
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(40, -20, 20, 20, 0, 40);
+      foregroundLayer.vertex(0, 0);
+      foregroundLayer.bezierVertex(-40, -20, -20, 20, 0, 40);
+      foregroundLayer.endShape();
+      foregroundLayer.popMatrix();
+      
+      if(mirror.clicked == true) {
+        foregroundLayer.pushMatrix();
+        foregroundLayer.translate(width-tempx,tempy);
+        foregroundLayer.rotate(a);
+        foregroundLayer.scale(s);
+        foregroundLayer.fill(mycolor, t);
+        foregroundLayer.noStroke();
+        foregroundLayer.beginShape();
+        foregroundLayer.vertex(0, 0);
+        foregroundLayer.bezierVertex(40, -20, 20, 20, 0, 40);
+        foregroundLayer.vertex(0, 0);
+        foregroundLayer.bezierVertex(-40, -20, -20, 20, 0, 40);
+        foregroundLayer.endShape();
+        foregroundLayer.popMatrix();
+      }
+    }
+    mx = targetX;
+    my = targetY;
+  }
+  foregroundLayer.endDraw();
+  
+  image(backgroundLayer, 0, 0);
+  image(foregroundLayer, 0, 0);
+}
+
+void colorselector(int x, int y) {
+  pushMatrix();
+  translate(x,y);
+  for(int i = 0; i < 90; i++) {
+    float bright = map(i, 0, 90, 255, 0);
+    color b = color(bright);
+    stroke(b);
+    line(60,-45+i,80,-45+i);
+  }
+  for(float hh = 0; hh < 360; hh++) {
+    for(float i = 0; i < 255; i++) {
+      //when the radius is from 26 to 45 (150/255*45 == 26), we change Brightness
+      //so the color dip into black
+      float bb = map(i, 150, 255, 255, 50);
+      // when the radius is from 0 to 26, we change Saturation
+      //so the pie center start from white
+      float ss = map(i, 0, 150, 0, 255);
+      color cc = color(hh, ss, bb);
+      stroke(cc);
+      point((45.0/255)*i*sin(0.017453*hh),(45.0/255)*i*cos(0.017453*hh));
+    }
+  }
+  popMatrix();
+}
+
+void selectcolor() {
+  float disX = 380 - mouseX;
+  float disY = 50 - mouseY;
+  if(mousePressed) {
+    if( (sqrt(sq(disX) + sq(disY)) < 45) || 
+    (mouseX > 440 && mouseX < 460 && mouseY > 5 && mouseY < 90)) {
+      mycolor = get(mouseX, mouseY);    
+    }    
+  }
+  noStroke();
+  fill(mycolor);
+  rect(470,75,20,20);
+}
+
+class Button {
+  float xpos, ypos, radius;
+  color cc;
+  boolean clicked;
+  Button (float x, float y, float r, color c) {
+    xpos = x;
+    ypos = y;
+    radius = r;
+    cc = c;
+    clicked = false;
+  }
+  //squire button, used for tools selector
+  void drawrectbutton() {
+    fill(255);
+    noStroke();
+    if(clicked == false) {
+      rect(xpos, ypos, radius, radius);
+    }
+    else {
+      rect(xpos-5, ypos-5, radius+10, radius+10);
+    }
+  }
+  //check if the mouse is over the button, if true, return true
+  boolean overrectbutton() {
+    if(mouseX >= xpos && mouseX <= xpos+radius && 
+      mouseY >= ypos && mouseY <= ypos+radius) {
+      return true;
+    }
+    else {
+      return false; 
+    }
+  }
+}
+
+void mousePressed() {
+  targetX = mouseX;
+  targetY = mouseY;
+  mx = targetX;
+  my = targetY;
+  pmx = mx;
+  pmy = my;
+}
+ 
+void mouseDragged() {
+  targetX = mouseX;
+  targetY = mouseY;
+}
+
+void mouseClicked() {
+    if(t0.overrectbutton() == true) { //line
+      tool = 'L';
+      t0.clicked = true;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t1.overrectbutton() == true) { //brush
+      tool = 'B';
+      t0.clicked = false;
+      t1.clicked = true;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t2.overrectbutton() == true) { //circle
+      tool = 'C';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = true;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t3.overrectbutton() == true) { //triangle
+      tool = 'T';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = true;
+      t4.clicked = false;
+      t5.clicked = false;
+    }
+    else if(t4.overrectbutton() == true) { //rect
+      tool = 'R';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = true;
+      t5.clicked = false;
+    }
+    else if(t5.overrectbutton() == true) { //heart
+      tool = 'H';
+      t0.clicked = false;
+      t1.clicked = false;
+      t2.clicked = false;
+      t3.clicked = false;
+      t4.clicked = false;
+      t5.clicked = true;
+    }
+    else if(mirror.overrectbutton() == true) {
+      if(mirror.clicked == false) {
+        mirror.clicked = true;
+      }
+      else {
+        mirror.clicked = false;
+      }
+    }
+    else if(clear.overrectbutton() == true) {
+      foregroundLayer.clear();
+    }
+}
+~~~
+
+
+## Change Background color ##
+The drawing part is almost finished.
+
+
+
+But this for T-shirt design, and we can have many color of T-shirts. So I would like to change background color by choose some buttons at the bottom of the sketch.
+
+
+The background color button is almost the same as the tools button. I decided to make it round, not a square. In my Button class, I add **drawcirclebutton()** function and **overcirclebutton()** function. Drawcirclebutton() function is simple, while overcirclebutton is slightly different from overrectbutton, because we need to check the distance between the circle'c enter and position of mouse.
+~~~
+  //check if the mouse is over the button, if true, return true
+  boolean overcirclebutton() {
+    float disX = xpos - mouseX;
+    float disY = ypos - mouseY;
+    if( sqrt(sq(disX) + sq(disY)) < radius/2 ) {
+      return true;
+    }
+    else {
+      return false; 
+    }
+  }
+~~~
