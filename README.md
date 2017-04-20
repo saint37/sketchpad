@@ -1,3 +1,3 @@
 # sketchpad
-processing code for sketchpad
-download .pde and run for fun
+processing code for sketchpad;
+download .pde and run for fun;
